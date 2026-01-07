@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Push & Pull Alarm</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #13131a;
+            --bg-card: #1a1a24;
+            --text-primary: #f0f0f5;
+            --text-secondary: #8888a0;
+            --accent-push: #ff3366;
+            --accent-pull: #00e5cc;
+            --accent-glow-push: rgba(255, 51, 102, 0.4);
+            --accent-glow-pull: rgba(0, 229, 204, 0.4);
+        }
+
+        .dark {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #13131a;
+            --bg-card: #1a1a24;
+            --text-primary: #f0f0f5;
+            --text-secondary: #8888a0;
+        }
+
+        html:not(.dark) {
+            --bg-primary: #f5f5fa;
+            --bg-secondary: #e8e8f0;
+            --bg-card: #ffffff;
+            --text-primary: #1a1a24;
+            --text-secondary: #666680;
+            --accent-glow-push: rgba(255, 51, 102, 0.2);
+            --accent-glow-pull: rgba(0, 180, 160, 0.2);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Space Mono', monospace;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            transition: background 0.3s ease;
+        }
+
+        .container {
+            max-width: 420px;
+            width: 100%;
+        }
+
+        h1 {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 3rem;
+            text-align: center;
+            letter-spacing: 4px;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, var(--accent-push), var(--accent-pull));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            margin-bottom: 30px;
+            letter-spacing: 2px;
+        }
+
+        .mode-toggle {
+            display: flex;
+            background: var(--bg-secondary);
+            border-radius: 50px;
+            padding: 6px;
+            margin-bottom: 24px;
+            position: relative;
+        }
+
+        .mode-btn {
+            flex: 1;
+            padding: 14px 20px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.2rem;
+            letter-spacing: 2px;
+            cursor: pointer;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+            z-index: 1;
+        }
+
+        .mode-btn.active {
+            color: var(--bg-primary);
+        }
+
+        .mode-slider {
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            width: calc(50% - 6px);
+            height: calc(100% - 12px);
+            background: var(--accent-push);
+            border-radius: 50px;
+            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            box-shadow: 0 4px 20px var(--accent-glow-push);
+        }
+
+        .mode-slider.pull {
+            transform: translateX(100%);
+            background: var(--accent-pull);
+            box-shadow: 0 4px 20px var(--accent-glow-pull);
+        }
+
+        .timer-display {
+            background: var(--bg-card);
+            border-radius: 24px;
+            padding: 40px 20px;
+            text-align: center;
+            margin-bottom: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .timer-display::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--accent-push), var(--accent-pull));
+        }
+
+        .timer-ring {
+            width: 200px;
+            height: 200px;
+            margin: 0 auto 20px;
+            position: relative;
+        }
+
+        .timer-ring svg {
+            transform: rotate(-90deg);
+            width: 100%;
+            height: 100%;
+        }
+
+        .timer-ring circle {
+            fill: none;
+            stroke-width: 8;
+        }
+
+        .timer-ring .bg {
+            stroke: var(--bg-secondary);
+        }
+
+        .timer-ring .progress {
+            stroke: var(--accent-push);
+            stroke-linecap: round;
+            stroke-dasharray: 565.48;
+            stroke-dashoffset: 0;
+            transition: stroke-dashoffset 0.5s ease, stroke 0.3s ease;
+            filter: drop-shadow(0 0 10px var(--accent-glow-push));
+        }
+
+        .timer-ring .progress.pull {
+            stroke: var(--accent-pull);
+            filter: drop-shadow(0 0 10px var(--accent-glow-pull));
+        }
+
+        .time-value {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 4rem;
+            letter-spacing: 4px;
+        }
+
+        .exercise-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 3px;
+        }
+
+        .settings-card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--bg-secondary);
+        }
+
+        .setting-row:last-child {
+            border-bottom: none;
+        }
+
+        .setting-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .setting-value {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .adjust-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 2px solid var(--text-secondary);
+            background: transparent;
+            color: var(--text-primary);
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .adjust-btn:hover {
+            border-color: var(--accent-push);
+            color: var(--accent-push);
+        }
+
+        .adjust-btn:active {
+            transform: scale(0.95);
+        }
+
+        .value-display {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.5rem;
+            min-width: 50px;
+            text-align: center;
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+        }
+
+        .control-btn {
+            flex: 1;
+            padding: 18px;
+            border: none;
+            border-radius: 16px;
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.3rem;
+            letter-spacing: 2px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .start-btn {
+            background: linear-gradient(135deg, var(--accent-push), #ff6699);
+            color: #fff;
+            box-shadow: 0 8px 30px var(--accent-glow-push);
+        }
+
+        .start-btn.pull-mode {
+            background: linear-gradient(135deg, var(--accent-pull), #66ffee);
+            box-shadow: 0 8px 30px var(--accent-glow-pull);
+        }
+
+        .start-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .start-btn:active {
+            transform: translateY(0);
+        }
+
+        .reset-btn {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            flex: 0.4;
+        }
+
+        .reset-btn:hover {
+            background: var(--bg-card);
+        }
+
+        .stats {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .stat-card {
+            flex: 1;
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 2.5rem;
+        }
+
+        .stat-value.push {
+            color: var(--accent-push);
+        }
+
+        .stat-value.pull {
+            color: var(--accent-pull);
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            letter-spacing: 2px;
+            margin-top: 4px;
+        }
+
+        .alert-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .alert-overlay.active {
+            display: flex;
+        }
+
+        .alert-content {
+            text-align: center;
+            animation: pulse 0.5s ease infinite alternate;
+        }
+
+        .alert-icon {
+            font-size: 5rem;
+            margin-bottom: 20px;
+        }
+
+        .alert-text {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 3rem;
+            letter-spacing: 4px;
+            margin-bottom: 30px;
+        }
+
+        .alert-text.push {
+            color: var(--accent-push);
+            text-shadow: 0 0 40px var(--accent-glow-push);
+        }
+
+        .alert-text.pull {
+            color: var(--accent-pull);
+            text-shadow: 0 0 40px var(--accent-glow-pull);
+        }
+
+        .dismiss-btn {
+            padding: 16px 48px;
+            border: none;
+            border-radius: 50px;
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.2rem;
+            letter-spacing: 2px;
+            cursor: pointer;
+            background: var(--text-primary);
+            color: var(--bg-primary);
+            transition: transform 0.2s ease;
+        }
+
+        .dismiss-btn:hover {
+            transform: scale(1.05);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes pulse {
+            from { transform: scale(1); }
+            to { transform: scale(1.05); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        .shaking {
+            animation: shake 0.3s ease infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>PUSH & PULL</h1>
+        <p class="subtitle">INTERVAL WORKOUT ALARM</p>
+
+        <div class="mode-toggle">
+            <div class="mode-slider" id="modeSlider"></div>
+            <button class="mode-btn active" id="pushBtn" onclick="setMode('push')">PUSH UPS</button>
+            <button class="mode-btn" id="pullBtn" onclick="setMode('pull')">PULL UPS</button>
+        </div>
+
+        <div class="timer-display">
+            <div class="timer-ring">
+                <svg viewBox="0 0 200 200">
+                    <circle class="bg" cx="100" cy="100" r="90"></circle>
+                    <circle class="progress" id="progressRing" cx="100" cy="100" r="90"></circle>
+                </svg>
+                <div class="time-value" id="timeDisplay">05:00</div>
+            </div>
+            <p class="exercise-label" id="exerciseLabel">PUSH UPS IN</p>
+        </div>
+
+        <div class="settings-card">
+            <div class="setting-row">
+                <span class="setting-label">INTERVAL (MINUTES)</span>
+                <div class="setting-value">
+                    <button class="adjust-btn" onclick="adjustInterval(-1)">−</button>
+                    <span class="value-display" id="intervalDisplay">5</span>
+                    <button class="adjust-btn" onclick="adjustInterval(1)">+</button>
+                </div>
+            </div>
+            <div class="setting-row">
+                <span class="setting-label">REPS PER SET</span>
+                <div class="setting-value">
+                    <button class="adjust-btn" onclick="adjustReps(-5)">−</button>
+                    <span class="value-display" id="repsDisplay">10</span>
+                    <button class="adjust-btn" onclick="adjustReps(5)">+</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="control-btn reset-btn" onclick="resetTimer()">RESET</button>
+            <button class="control-btn start-btn" id="startBtn" onclick="toggleTimer()">START</button>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-value push" id="pushCount">0</div>
+                <div class="stat-label">PUSH UPS</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value pull" id="pullCount">0</div>
+                <div class="stat-label">PULL UPS</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="alert-overlay" id="alertOverlay">
+        <div class="alert-content">
+            <div class="alert-icon" id="alertIcon">💪</div>
+            <div class="alert-text" id="alertText">TIME FOR PUSH UPS!</div>
+            <button class="dismiss-btn" onclick="dismissAlert()">DONE! (+<span id="repsDone">10</span> REPS)</button>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let currentMode = 'push';
+        let interval = 5;
+        let reps = 10;
+        let timeLeft = interval * 60;
+        let totalTime = interval * 60;
+        let isRunning = false;
+        let timerInterval = null;
+        let pushCount = 0;
+        let pullCount = 0;
+        let audioContext = null;
+
+        // DOM Elements
+        const modeSlider = document.getElementById('modeSlider');
+        const pushBtn = document.getElementById('pushBtn');
+        const pullBtn = document.getElementById('pullBtn');
+        const progressRing = document.getElementById('progressRing');
+        const timeDisplay = document.getElementById('timeDisplay');
+        const exerciseLabel = document.getElementById('exerciseLabel');
+        const intervalDisplay = document.getElementById('intervalDisplay');
+        const repsDisplay = document.getElementById('repsDisplay');
+        const startBtn = document.getElementById('startBtn');
+        const alertOverlay = document.getElementById('alertOverlay');
+        const alertIcon = document.getElementById('alertIcon');
+        const alertText = document.getElementById('alertText');
+        const repsDone = document.getElementById('repsDone');
+        const pushCountEl = document.getElementById('pushCount');
+        const pullCountEl = document.getElementById('pullCount');
+
+        // Dark mode detection
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+        }
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+            if (event.matches) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        });
+
+        // Initialize audio context
+        function initAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        // Play alarm sound
+        function playAlarm() {
+            initAudio();
+            const frequencies = [523.25, 659.25, 783.99, 1046.5];
+
+            frequencies.forEach((freq, i) => {
+                setTimeout(() => {
+                    const oscillator = audioContext.createOscillator();
+                    const gainNode = audioContext.createGain();
+
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+
+                    oscillator.frequency.value = freq;
+                    oscillator.type = 'sine';
+
+                    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+
+                    oscillator.start(audioContext.currentTime);
+                    oscillator.stop(audioContext.currentTime + 0.3);
+                }, i * 150);
+            });
+        }
+
+        // Set exercise mode
+        function setMode(mode) {
+            currentMode = mode;
+
+            if (mode === 'push') {
+                modeSlider.classList.remove('pull');
+                pushBtn.classList.add('active');
+                pullBtn.classList.remove('active');
+                progressRing.classList.remove('pull');
+                startBtn.classList.remove('pull-mode');
+                exerciseLabel.textContent = 'PUSH UPS IN';
+            } else {
+                modeSlider.classList.add('pull');
+                pullBtn.classList.add('active');
+                pushBtn.classList.remove('active');
+                progressRing.classList.add('pull');
+                startBtn.classList.add('pull-mode');
+                exerciseLabel.textContent = 'PULL UPS IN';
+            }
+        }
+
+        // Adjust interval
+        function adjustInterval(delta) {
+            interval = Math.max(1, Math.min(60, interval + delta));
+            intervalDisplay.textContent = interval;
+            if (!isRunning) {
+                timeLeft = interval * 60;
+                totalTime = interval * 60;
+                updateDisplay();
+            }
+        }
+
+        // Adjust reps
+        function adjustReps(delta) {
+            reps = Math.max(5, Math.min(100, reps + delta));
+            repsDisplay.textContent = reps;
+            repsDone.textContent = reps;
+        }
+
+        // Update timer display
+        function updateDisplay() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            timeDisplay.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+
+            // Update progress ring
+            const circumference = 2 * Math.PI * 90;
+            const offset = circumference * (1 - timeLeft / totalTime);
+            progressRing.style.strokeDashoffset = offset;
+        }
+
+        // Toggle timer
+        function toggleTimer() {
+            initAudio();
+
+            if (isRunning) {
+                pauseTimer();
+            } else {
+                startTimer();
+            }
+        }
+
+        // Start timer
+        function startTimer() {
+            isRunning = true;
+            startBtn.textContent = 'PAUSE';
+
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                updateDisplay();
+
+                if (timeLeft <= 0) {
+                    triggerAlarm();
+                }
+            }, 1000);
+        }
+
+        // Pause timer
+        function pauseTimer() {
+            isRunning = false;
+            startBtn.textContent = 'RESUME';
+            clearInterval(timerInterval);
+        }
+
+        // Reset timer
+        function resetTimer() {
+            isRunning = false;
+            startBtn.textContent = 'START';
+            clearInterval(timerInterval);
+            timeLeft = interval * 60;
+            totalTime = interval * 60;
+            updateDisplay();
+        }
+
+        // Trigger alarm
+        function triggerAlarm() {
+            clearInterval(timerInterval);
+            isRunning = false;
+            startBtn.textContent = 'START';
+
+            playAlarm();
+
+            alertIcon.textContent = currentMode === 'push' ? '💪' : '🏋️';
+            alertText.textContent = currentMode === 'push' ? 'TIME FOR PUSH UPS!' : 'TIME FOR PULL UPS!';
+            alertText.className = `alert-text ${currentMode}`;
+            repsDone.textContent = reps;
+
+            alertOverlay.classList.add('active');
+            alertOverlay.querySelector('.alert-content').classList.add('shaking');
+
+            setTimeout(() => {
+                alertOverlay.querySelector('.alert-content').classList.remove('shaking');
+            }, 1500);
+        }
+
+        // Dismiss alert
+        function dismissAlert() {
+            alertOverlay.classList.remove('active');
+
+            // Update counts
+            if (currentMode === 'push') {
+                pushCount += reps;
+                pushCountEl.textContent = pushCount;
+            } else {
+                pullCount += reps;
+                pullCountEl.textContent = pullCount;
+            }
+
+            // Reset and auto-start next interval
+            timeLeft = interval * 60;
+            totalTime = interval * 60;
+            updateDisplay();
+            startTimer();
+        }
+
+        // Initialize
+        updateDisplay();
+        repsDone.textContent = reps;
+    </script>
+</body>
+</html>
+
