@@ -1,0 +1,705 @@
++   1 <!DOCTYPE html>
++   2 <html lang="en">
++   3 <head>
++   4     <meta charset="UTF-8">
++   5     <meta name="viewport" content="width=device-width, initial-scale=1.0">
++   6     <title>Push & Pull Alarm</title>
++   7     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
++   8     <style>
++   9         :root {
++  10             --bg-primary: #0a0a0f;
++  11             --bg-secondary: #13131a;
++  12             --bg-card: #1a1a24;
++  13             --text-primary: #f0f0f5;
++  14             --text-secondary: #8888a0;
++  15             --accent-push: #ff3366;
++  16             --accent-pull: #00e5cc;
++  17             --accent-glow-push: rgba(255, 51, 102, 0.4);
++  18             --accent-glow-pull: rgba(0, 229, 204, 0.4);
++  19         }
++  20 
++  21         .dark {
++  22             --bg-primary: #0a0a0f;
++  23             --bg-secondary: #13131a;
++  24             --bg-card: #1a1a24;
++  25             --text-primary: #f0f0f5;
++  26             --text-secondary: #8888a0;
++  27         }
++  28 
++  29         html:not(.dark) {
++  30             --bg-primary: #f5f5fa;
++  31             --bg-secondary: #e8e8f0;
++  32             --bg-card: #ffffff;
++  33             --text-primary: #1a1a24;
++  34             --text-secondary: #666680;
++  35             --accent-glow-push: rgba(255, 51, 102, 0.2);
++  36             --accent-glow-pull: rgba(0, 180, 160, 0.2);
++  37         }
++  38 
++  39         * {
++  40             margin: 0;
++  41             padding: 0;
++  42             box-sizing: border-box;
++  43         }
++  44 
++  45         body {
++  46             font-family: 'Space Mono', monospace;
++  47             background: var(--bg-primary);
++  48             color: var(--text-primary);
++  49             min-height: 100vh;
++  50             display: flex;
++  51             flex-direction: column;
++  52             align-items: center;
++  53             padding: 20px;
++  54             transition: background 0.3s ease;
++  55         }
++  56 
++  57         .container {
++  58             max-width: 420px;
++  59             width: 100%;
++  60         }
++  61 
++  62         h1 {
++  63             font-family: 'Bebas Neue', sans-serif;
++  64             font-size: 3rem;
++  65             text-align: center;
++  66             letter-spacing: 4px;
++  67             margin-bottom: 8px;
++  68             background: linear-gradient(135deg, var(--accent-push), var(--accent-pull));
++  69             -webkit-background-clip: text;
++  70             -webkit-text-fill-color: transparent;
++  71             background-clip: text;
++  72         }
++  73 
++  74         .subtitle {
++  75             text-align: center;
++  76             color: var(--text-secondary);
++  77             font-size: 0.75rem;
++  78             margin-bottom: 30px;
++  79             letter-spacing: 2px;
++  80         }
++  81 
++  82         .mode-toggle {
++  83             display: flex;
++  84             background: var(--bg-secondary);
++  85             border-radius: 50px;
++  86             padding: 6px;
++  87             margin-bottom: 24px;
++  88             position: relative;
++  89         }
++  90 
++  91         .mode-btn {
++  92             flex: 1;
++  93             padding: 14px 20px;
++  94             border: none;
++  95             background: transparent;
++  96             color: var(--text-secondary);
++  97             font-family: 'Bebas Neue', sans-serif;
++  98             font-size: 1.2rem;
++  99             letter-spacing: 2px;
++ 100             cursor: pointer;
++ 101             border-radius: 50px;
++ 102             transition: all 0.3s ease;
++ 103             z-index: 1;
++ 104         }
++ 105 
++ 106         .mode-btn.active {
++ 107             color: var(--bg-primary);
++ 108         }
++ 109 
++ 110         .mode-slider {
++ 111             position: absolute;
++ 112             top: 6px;
++ 113             left: 6px;
++ 114             width: calc(50% - 6px);
++ 115             height: calc(100% - 12px);
++ 116             background: var(--accent-push);
++ 117             border-radius: 50px;
++ 118             transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
++ 119             box-shadow: 0 4px 20px var(--accent-glow-push);
++ 120         }
++ 121 
++ 122         .mode-slider.pull {
++ 123             transform: translateX(100%);
++ 124             background: var(--accent-pull);
++ 125             box-shadow: 0 4px 20px var(--accent-glow-pull);
++ 126         }
++ 127 
++ 128         .timer-display {
++ 129             background: var(--bg-card);
++ 130             border-radius: 24px;
++ 131             padding: 40px 20px;
++ 132             text-align: center;
++ 133             margin-bottom: 24px;
++ 134             position: relative;
++ 135             overflow: hidden;
++ 136         }
++ 137 
++ 138         .timer-display::before {
++ 139             content: '';
++ 140             position: absolute;
++ 141             top: 0;
++ 142             left: 0;
++ 143             right: 0;
++ 144             height: 4px;
++ 145             background: linear-gradient(90deg, var(--accent-push), var(--accent-pull));
++ 146         }
++ 147 
++ 148         .timer-ring {
++ 149             width: 200px;
++ 150             height: 200px;
++ 151             margin: 0 auto 20px;
++ 152             position: relative;
++ 153         }
++ 154 
++ 155         .timer-ring svg {
++ 156             transform: rotate(-90deg);
++ 157             width: 100%;
++ 158             height: 100%;
++ 159         }
++ 160 
++ 161         .timer-ring circle {
++ 162             fill: none;
++ 163             stroke-width: 8;
++ 164         }
++ 165 
++ 166         .timer-ring .bg {
++ 167             stroke: var(--bg-secondary);
++ 168         }
++ 169 
++ 170         .timer-ring .progress {
++ 171             stroke: var(--accent-push);
++ 172             stroke-linecap: round;
++ 173             stroke-dasharray: 565.48;
++ 174             stroke-dashoffset: 0;
++ 175             transition: stroke-dashoffset 0.5s ease, stroke 0.3s ease;
++ 176             filter: drop-shadow(0 0 10px var(--accent-glow-push));
++ 177         }
++ 178 
++ 179         .timer-ring .progress.pull {
++ 180             stroke: var(--accent-pull);
++ 181             filter: drop-shadow(0 0 10px var(--accent-glow-pull));
++ 182         }
++ 183 
++ 184         .time-value {
++ 185             position: absolute;
++ 186             top: 50%;
++ 187             left: 50%;
++ 188             transform: translate(-50%, -50%);
++ 189             font-family: 'Bebas Neue', sans-serif;
++ 190             font-size: 4rem;
++ 191             letter-spacing: 4px;
++ 192         }
++ 193 
++ 194         .exercise-label {
++ 195             font-size: 0.9rem;
++ 196             color: var(--text-secondary);
++ 197             text-transform: uppercase;
++ 198             letter-spacing: 3px;
++ 199         }
++ 200 
++ 201         .settings-card {
++ 202             background: var(--bg-card);
++ 203             border-radius: 16px;
++ 204             padding: 20px;
++ 205             margin-bottom: 24px;
++ 206         }
++ 207 
++ 208         .setting-row {
++ 209             display: flex;
++ 210             justify-content: space-between;
++ 211             align-items: center;
++ 212             padding: 12px 0;
++ 213             border-bottom: 1px solid var(--bg-secondary);
++ 214         }
++ 215 
++ 216         .setting-row:last-child {
++ 217             border-bottom: none;
++ 218         }
++ 219 
++ 220         .setting-label {
++ 221             font-size: 0.85rem;
++ 222             color: var(--text-secondary);
++ 223         }
++ 224 
++ 225         .setting-value {
++ 226             display: flex;
++ 227             align-items: center;
++ 228             gap: 12px;
++ 229         }
++ 230 
++ 231         .adjust-btn {
++ 232             width: 36px;
++ 233             height: 36px;
++ 234             border-radius: 50%;
++ 235             border: 2px solid var(--text-secondary);
++ 236             background: transparent;
++ 237             color: var(--text-primary);
++ 238             font-size: 1.2rem;
++ 239             cursor: pointer;
++ 240             transition: all 0.2s ease;
++ 241             display: flex;
++ 242             align-items: center;
++ 243             justify-content: center;
++ 244         }
++ 245 
++ 246         .adjust-btn:hover {
++ 247             border-color: var(--accent-push);
++ 248             color: var(--accent-push);
++ 249         }
++ 250 
++ 251         .adjust-btn:active {
++ 252             transform: scale(0.95);
++ 253         }
++ 254 
++ 255         .value-display {
++ 256             font-family: 'Bebas Neue', sans-serif;
++ 257             font-size: 1.5rem;
++ 258             min-width: 50px;
++ 259             text-align: center;
++ 260         }
++ 261 
++ 262         .controls {
++ 263             display: flex;
++ 264             gap: 12px;
++ 265         }
++ 266 
++ 267         .control-btn {
++ 268             flex: 1;
++ 269             padding: 18px;
++ 270             border: none;
++ 271             border-radius: 16px;
++ 272             font-family: 'Bebas Neue', sans-serif;
++ 273             font-size: 1.3rem;
++ 274             letter-spacing: 2px;
++ 275             cursor: pointer;
++ 276             transition: all 0.3s ease;
++ 277         }
++ 278 
++ 279         .start-btn {
++ 280             background: linear-gradient(135deg, var(--accent-push), #ff6699);
++ 281             color: #fff;
++ 282             box-shadow: 0 8px 30px var(--accent-glow-push);
++ 283         }
++ 284 
++ 285         .start-btn.pull-mode {
++ 286             background: linear-gradient(135deg, var(--accent-pull), #66ffee);
++ 287             box-shadow: 0 8px 30px var(--accent-glow-pull);
++ 288         }
++ 289 
++ 290         .start-btn:hover {
++ 291             transform: translateY(-2px);
++ 292         }
++ 293 
++ 294         .start-btn:active {
++ 295             transform: translateY(0);
++ 296         }
++ 297 
++ 298         .reset-btn {
++ 299             background: var(--bg-secondary);
++ 300             color: var(--text-primary);
++ 301             flex: 0.4;
++ 302         }
++ 303 
++ 304         .reset-btn:hover {
++ 305             background: var(--bg-card);
++ 306         }
++ 307 
++ 308         .stats {
++ 309             display: flex;
++ 310             gap: 12px;
++ 311             margin-top: 24px;
++ 312         }
++ 313 
++ 314         .stat-card {
++ 315             flex: 1;
++ 316             background: var(--bg-card);
++ 317             border-radius: 16px;
++ 318             padding: 20px;
++ 319             text-align: center;
++ 320         }
++ 321 
++ 322         .stat-value {
++ 323             font-family: 'Bebas Neue', sans-serif;
++ 324             font-size: 2.5rem;
++ 325         }
++ 326 
++ 327         .stat-value.push {
++ 328             color: var(--accent-push);
++ 329         }
++ 330 
++ 331         .stat-value.pull {
++ 332             color: var(--accent-pull);
++ 333         }
++ 334 
++ 335         .stat-label {
++ 336             font-size: 0.7rem;
++ 337             color: var(--text-secondary);
++ 338             letter-spacing: 2px;
++ 339             margin-top: 4px;
++ 340         }
++ 341 
++ 342         .alert-overlay {
++ 343             position: fixed;
++ 344             top: 0;
++ 345             left: 0;
++ 346             right: 0;
++ 347             bottom: 0;
++ 348             background: rgba(0, 0, 0, 0.9);
++ 349             display: none;
++ 350             align-items: center;
++ 351             justify-content: center;
++ 352             z-index: 100;
++ 353             animation: fadeIn 0.3s ease;
++ 354         }
++ 355 
++ 356         .alert-overlay.active {
++ 357             display: flex;
++ 358         }
++ 359 
++ 360         .alert-content {
++ 361             text-align: center;
++ 362             animation: pulse 0.5s ease infinite alternate;
++ 363         }
++ 364 
++ 365         .alert-icon {
++ 366             font-size: 5rem;
++ 367             margin-bottom: 20px;
++ 368         }
++ 369 
++ 370         .alert-text {
++ 371             font-family: 'Bebas Neue', sans-serif;
++ 372             font-size: 3rem;
++ 373             letter-spacing: 4px;
++ 374             margin-bottom: 30px;
++ 375         }
++ 376 
++ 377         .alert-text.push {
++ 378             color: var(--accent-push);
++ 379             text-shadow: 0 0 40px var(--accent-glow-push);
++ 380         }
++ 381 
++ 382         .alert-text.pull {
++ 383             color: var(--accent-pull);
++ 384             text-shadow: 0 0 40px var(--accent-glow-pull);
++ 385         }
++ 386 
++ 387         .dismiss-btn {
++ 388             padding: 16px 48px;
++ 389             border: none;
++ 390             border-radius: 50px;
++ 391             font-family: 'Bebas Neue', sans-serif;
++ 392             font-size: 1.2rem;
++ 393             letter-spacing: 2px;
++ 394             cursor: pointer;
++ 395             background: var(--text-primary);
++ 396             color: var(--bg-primary);
++ 397             transition: transform 0.2s ease;
++ 398         }
++ 399 
++ 400         .dismiss-btn:hover {
++ 401             transform: scale(1.05);
++ 402         }
++ 403 
++ 404         @keyframes fadeIn {
++ 405             from { opacity: 0; }
++ 406             to { opacity: 1; }
++ 407         }
++ 408 
++ 409         @keyframes pulse {
++ 410             from { transform: scale(1); }
++ 411             to { transform: scale(1.05); }
++ 412         }
++ 413 
++ 414         @keyframes shake {
++ 415             0%, 100% { transform: translateX(0); }
++ 416             25% { transform: translateX(-10px); }
++ 417             75% { transform: translateX(10px); }
++ 418         }
++ 419 
++ 420         .shaking {
++ 421             animation: shake 0.3s ease infinite;
++ 422         }
++ 423     </style>
++ 424 </head>
++ 425 <body>
++ 426     <div class="container">
++ 427         <h1>PUSH & PULL</h1>
++ 428         <p class="subtitle">INTERVAL WORKOUT ALARM</p>
++ 429 
++ 430         <div class="mode-toggle">
++ 431             <div class="mode-slider" id="modeSlider"></div>
++ 432             <button class="mode-btn active" id="pushBtn" onclick="setMode('push')">PUSH UPS</button>
++ 433             <button class="mode-btn" id="pullBtn" onclick="setMode('pull')">PULL UPS</button>
++ 434         </div>
++ 435 
++ 436         <div class="timer-display">
++ 437             <div class="timer-ring">
++ 438                 <svg viewBox="0 0 200 200">
++ 439                     <circle class="bg" cx="100" cy="100" r="90"></circle>
++ 440                     <circle class="progress" id="progressRing" cx="100" cy="100" r="90"></circle>
++ 441                 </svg>
++ 442                 <div class="time-value" id="timeDisplay">05:00</div>
++ 443             </div>
++ 444             <p class="exercise-label" id="exerciseLabel">PUSH UPS IN</p>
++ 445         </div>
++ 446 
++ 447         <div class="settings-card">
++ 448             <div class="setting-row">
++ 449                 <span class="setting-label">INTERVAL (MINUTES)</span>
++ 450                 <div class="setting-value">
++ 451                     <button class="adjust-btn" onclick="adjustInterval(-1)">−</button>
++ 452                     <span class="value-display" id="intervalDisplay">5</span>
++ 453                     <button class="adjust-btn" onclick="adjustInterval(1)">+</button>
++ 454                 </div>
++ 455             </div>
++ 456             <div class="setting-row">
++ 457                 <span class="setting-label">REPS PER SET</span>
++ 458                 <div class="setting-value">
++ 459                     <button class="adjust-btn" onclick="adjustReps(-5)">−</button>
++ 460                     <span class="value-display" id="repsDisplay">10</span>
++ 461                     <button class="adjust-btn" onclick="adjustReps(5)">+</button>
++ 462                 </div>
++ 463             </div>
++ 464         </div>
++ 465 
++ 466         <div class="controls">
++ 467             <button class="control-btn reset-btn" onclick="resetTimer()">RESET</button>
++ 468             <button class="control-btn start-btn" id="startBtn" onclick="toggleTimer()">START</button>
++ 469         </div>
++ 470 
++ 471         <div class="stats">
++ 472             <div class="stat-card">
++ 473                 <div class="stat-value push" id="pushCount">0</div>
++ 474                 <div class="stat-label">PUSH UPS</div>
++ 475             </div>
++ 476             <div class="stat-card">
++ 477                 <div class="stat-value pull" id="pullCount">0</div>
++ 478                 <div class="stat-label">PULL UPS</div>
++ 479             </div>
++ 480         </div>
++ 481     </div>
++ 482 
++ 483     <div class="alert-overlay" id="alertOverlay">
++ 484         <div class="alert-content">
++ 485             <div class="alert-icon" id="alertIcon">💪</div>
++ 486             <div class="alert-text" id="alertText">TIME FOR PUSH UPS!</div>
++ 487             <button class="dismiss-btn" onclick="dismissAlert()">DONE! (+<span id="repsDone">10</span> REPS)</button>
++ 488         </div>
++ 489     </div>
++ 490 
++ 491     <script>
++ 492         // State
++ 493         let currentMode = 'push';
++ 494         let interval = 5;
++ 495         let reps = 10;
++ 496         let timeLeft = interval * 60;
++ 497         let totalTime = interval * 60;
++ 498         let isRunning = false;
++ 499         let timerInterval = null;
++ 500         let pushCount = 0;
++ 501         let pullCount = 0;
++ 502         let audioContext = null;
++ 503 
++ 504         // DOM Elements
++ 505         const modeSlider = document.getElementById('modeSlider');
++ 506         const pushBtn = document.getElementById('pushBtn');
++ 507         const pullBtn = document.getElementById('pullBtn');
++ 508         const progressRing = document.getElementById('progressRing');
++ 509         const timeDisplay = document.getElementById('timeDisplay');
++ 510         const exerciseLabel = document.getElementById('exerciseLabel');
++ 511         const intervalDisplay = document.getElementById('intervalDisplay');
++ 512         const repsDisplay = document.getElementById('repsDisplay');
++ 513         const startBtn = document.getElementById('startBtn');
++ 514         const alertOverlay = document.getElementById('alertOverlay');
++ 515         const alertIcon = document.getElementById('alertIcon');
++ 516         const alertText = document.getElementById('alertText');
++ 517         const repsDone = document.getElementById('repsDone');
++ 518         const pushCountEl = document.getElementById('pushCount');
++ 519         const pullCountEl = document.getElementById('pullCount');
++ 520 
++ 521         // Dark mode detection
++ 522         if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
++ 523             document.documentElement.classList.add('dark');
++ 524         }
++ 525         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
++ 526             if (event.matches) {
++ 527                 document.documentElement.classList.add('dark');
++ 528             } else {
++ 529                 document.documentElement.classList.remove('dark');
++ 530             }
++ 531         });
++ 532 
++ 533         // Initialize audio context
++ 534         function initAudio() {
++ 535             if (!audioContext) {
++ 536                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
++ 537             }
++ 538         }
++ 539 
++ 540         // Play alarm sound
++ 541         function playAlarm() {
++ 542             initAudio();
++ 543             const frequencies = [523.25, 659.25, 783.99, 1046.5];
++ 544             
++ 545             frequencies.forEach((freq, i) => {
++ 546                 setTimeout(() => {
++ 547                     const oscillator = audioContext.createOscillator();
++ 548                     const gainNode = audioContext.createGain();
++ 549                     
++ 550                     oscillator.connect(gainNode);
++ 551                     gainNode.connect(audioContext.destination);
++ 552                     
++ 553                     oscillator.frequency.value = freq;
++ 554                     oscillator.type = 'sine';
++ 555                     
++ 556                     gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
++ 557                     gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
++ 558                     
++ 559                     oscillator.start(audioContext.currentTime);
++ 560                     oscillator.stop(audioContext.currentTime + 0.3);
++ 561                 }, i * 150);
++ 562             });
++ 563         }
++ 564 
++ 565         // Set exercise mode
++ 566         function setMode(mode) {
++ 567             currentMode = mode;
++ 568             
++ 569             if (mode === 'push') {
++ 570                 modeSlider.classList.remove('pull');
++ 571                 pushBtn.classList.add('active');
++ 572                 pullBtn.classList.remove('active');
++ 573                 progressRing.classList.remove('pull');
++ 574                 startBtn.classList.remove('pull-mode');
++ 575                 exerciseLabel.textContent = 'PUSH UPS IN';
++ 576             } else {
++ 577                 modeSlider.classList.add('pull');
++ 578                 pullBtn.classList.add('active');
++ 579                 pushBtn.classList.remove('active');
++ 580                 progressRing.classList.add('pull');
++ 581                 startBtn.classList.add('pull-mode');
++ 582                 exerciseLabel.textContent = 'PULL UPS IN';
++ 583             }
++ 584         }
++ 585 
++ 586         // Adjust interval
++ 587         function adjustInterval(delta) {
++ 588             interval = Math.max(1, Math.min(60, interval + delta));
++ 589             intervalDisplay.textContent = interval;
++ 590             if (!isRunning) {
++ 591                 timeLeft = interval * 60;
++ 592                 totalTime = interval * 60;
++ 593                 updateDisplay();
++ 594             }
++ 595         }
++ 596 
++ 597         // Adjust reps
++ 598         function adjustReps(delta) {
++ 599             reps = Math.max(5, Math.min(100, reps + delta));
++ 600             repsDisplay.textContent = reps;
++ 601             repsDone.textContent = reps;
++ 602         }
++ 603 
++ 604         // Update timer display
++ 605         function updateDisplay() {
++ 606             const minutes = Math.floor(timeLeft / 60);
++ 607             const seconds = timeLeft % 60;
++ 608             timeDisplay.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
++ 609             
++ 610             // Update progress ring
++ 611             const circumference = 2 * Math.PI * 90;
++ 612             const offset = circumference * (1 - timeLeft / totalTime);
++ 613             progressRing.style.strokeDashoffset = offset;
++ 614         }
++ 615 
++ 616         // Toggle timer
++ 617         function toggleTimer() {
++ 618             initAudio();
++ 619             
++ 620             if (isRunning) {
++ 621                 pauseTimer();
++ 622             } else {
++ 623                 startTimer();
++ 624             }
++ 625         }
++ 626 
++ 627         // Start timer
++ 628         function startTimer() {
++ 629             isRunning = true;
++ 630             startBtn.textContent = 'PAUSE';
++ 631             
++ 632             timerInterval = setInterval(() => {
++ 633                 timeLeft--;
++ 634                 updateDisplay();
++ 635                 
++ 636                 if (timeLeft <= 0) {
++ 637                     triggerAlarm();
++ 638                 }
++ 639             }, 1000);
++ 640         }
++ 641 
++ 642         // Pause timer
++ 643         function pauseTimer() {
++ 644             isRunning = false;
++ 645             startBtn.textContent = 'RESUME';
++ 646             clearInterval(timerInterval);
++ 647         }
++ 648 
++ 649         // Reset timer
++ 650         function resetTimer() {
++ 651             isRunning = false;
++ 652             startBtn.textContent = 'START';
++ 653             clearInterval(timerInterval);
++ 654             timeLeft = interval * 60;
++ 655             totalTime = interval * 60;
++ 656             updateDisplay();
++ 657         }
++ 658 
++ 659         // Trigger alarm
++ 660         function triggerAlarm() {
++ 661             clearInterval(timerInterval);
++ 662             isRunning = false;
++ 663             startBtn.textContent = 'START';
++ 664             
++ 665             playAlarm();
++ 666             
++ 667             alertIcon.textContent = currentMode === 'push' ? '💪' : '🏋️';
++ 668             alertText.textContent = currentMode === 'push' ? 'TIME FOR PUSH UPS!' : 'TIME FOR PULL UPS!';
++ 669             alertText.className = `alert-text ${currentMode}`;
++ 670             repsDone.textContent = reps;
++ 671             
++ 672             alertOverlay.classList.add('active');
++ 673             alertOverlay.querySelector('.alert-content').classList.add('shaking');
++ 674             
++ 675             setTimeout(() => {
++ 676                 alertOverlay.querySelector('.alert-content').classList.remove('shaking');
++ 677             }, 1500);
++ 678         }
++ 679 
++ 680         // Dismiss alert
++ 681         function dismissAlert() {
++ 682             alertOverlay.classList.remove('active');
++ 683             
++ 684             // Update counts
++ 685             if (currentMode === 'push') {
++ 686                 pushCount += reps;
++ 687                 pushCountEl.textContent = pushCount;
++ 688             } else {
++ 689                 pullCount += reps;
++ 690                 pullCountEl.textContent = pullCount;
++ 691             }
++ 692             
++ 693             // Reset and auto-start next interval
++ 694             timeLeft = interval * 60;
++ 695             totalTime = interval * 60;
++ 696             updateDisplay();
++ 697             startTimer();
++ 698         }
++ 699 
++ 700         // Initialize
++ 701         updateDisplay();
++ 702         repsDone.textContent = reps;
++ 703     </script>
++ 704 </body>
++ 705 </html>
